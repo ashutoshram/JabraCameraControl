@@ -30,4 +30,4 @@ $(EXE) : testUVC.o $(LIB)
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDFLAGS) 
 
 clean: 
-	rm -f $(EXE) $(LIB) $(OBJS) 
+	rm -f $(EXE) $(LIB) $(OBJS) testUVC.o

@@ -77,6 +77,7 @@ class CameraDeviceInterface {
         virtual bool getProperty(PropertyType t, Property& prop) = 0;
         virtual bool setProperty(PropertyType p, int value) = 0; 
         virtual bool sendCommand(CommandInfo& info) = 0;
+        virtual ~CameraDeviceInterface() = default;
 };
 
 #ifdef _WIN32
@@ -129,9 +130,7 @@ class CameraQueryInterface {
 #elif __linux__
             return LinuxCameraDevice::getJabraDevices(devPaths);
 #elif __APPLE__
-            bool ret =  MacCameraDevice::getJabraDevices(devPaths);
-            printf("getJabraDevices returned %s\n", ret == true ? "true" : "false");
-            return ret;
+            return MacCameraDevice::getJabraDevices(devPaths);
 #endif
         }
         CameraDeviceInterface * openJabraDevice(const DeviceProperty& prop) {

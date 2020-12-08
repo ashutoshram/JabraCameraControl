@@ -3,8 +3,16 @@
 #include <stdexcept>
 
 #define UVC_GET_CUR 0x81
+#define UVC_GET_MIN 0x82
+#define UVC_GET_MAX 0x83
+#define UVC_GET_DEF 0x87
+
 #define UVC_SET_CUR 0x01
+
 #define PANACAST_VENDOR_ID 0x2b93
+
+#define UVC_INPUT_TERMINAL_ID  0x01
+#define UVC_PROCESSING_UNIT_ID 0x02
 
 MacCameraDevice::MacCameraDevice(const DeviceProperty& prop)
 {
@@ -27,7 +35,6 @@ MacCameraDevice::~MacCameraDevice()
 
 bool MacCameraDevice::getJabraDevices(std::vector<DeviceProperty>& devPaths)
 {
-    printf("In getJabraDevices\n");
     IOUSBInterfaceInterface190 * * tmp = NULL;
 
 	std::vector<std::string> dummy;
@@ -43,43 +50,111 @@ bool MacCameraDevice::getJabraDevices(std::vector<DeviceProperty>& devPaths)
 	return true;
 }
 
-static unsigned int convertPropertyTypeToPropertyId(PropertyType t) {
-    return 0; // FIXME    
+static int convertPropertyTypeToPropertyId(PropertyType t) {
+    switch (t) {
+        case Brightness:
+            return 0x02;
+        case Contrast:
+            return 0x03;
+        case Saturation:
+            return 0x07;
+        case Sharpness:
+            return 0x08;
+        case WhiteBalance:    
+            return 0x0A;
+    }
 };
-static unsigned int convertPropertyTypeToUnitId(PropertyType t) {
-    return 0; // FIXME    
+static int convertPropertyTypeToUnitId(PropertyType t) {
+    switch (t) {
+        case Brightness:
+        case Contrast:
+        case Saturation:
+        case Sharpness:
+        case WhiteBalance:    
+            return UVC_PROCESSING_UNIT_ID;
+    }
 };
-static unsigned int getSizeFromPropertyType(PropertyType t) {
-    return 0; // FIXME    
+static int getSizeFromPropertyType(PropertyType t) {
+    switch (t) {
+        case Brightness:
+        case Contrast:
+        case Saturation:
+        case Sharpness:
+        case WhiteBalance:    
+            return 0x02;
+    }
 };
+
+        
+static bool getData(IOUSBInterfaceInterface190 * * mControlIf, 
+        int requestType, int propertyId, int unitId, int length,
+        long& value)
+{
+    value = 0;
+    kern_return_t err;
+    IOUSBDevRequest request;
+    request.bmRequestType = USBmakebmRequestType(kUSBIn, kUSBClass, kUSBInterface);
+    request.bRequest = requestType;
+    request.wValue = (propertyId << 8) & 0xFF00;
+    request.wIndex = (unitId << 8) & 0xFF00; 
+    request.wLenDone = 0;
+    request.wLength = length;
+    request.pData = &value;
+
+    //Now open the interface. This will cause the pipes associated with
+    //the endpoints in the interface descriptor to be instantiated
+    kern_return_t kr = (*mControlIf)->USBInterfaceOpen(mControlIf);
+    if (kr != kIOReturnSuccess) {
+        printf("getData: Unable to open interface (%08x)\n", kr );
+        return false;
+    }
+   
+    err = (*mControlIf)->ControlRequest( mControlIf, 0, &request );
+    if ( err != kIOReturnSuccess )
+    {
+        kr = (*mControlIf)->USBInterfaceClose(mControlIf);
+        printf("getData: Control request failed: %08x", kr );
+        return false;
+    }
+
+    kr = (*mControlIf)->USBInterfaceClose(mControlIf);
+    return true;
+}
 
 bool MacCameraDevice::getProperty(PropertyType t, Property& prop)
 {
     if (mControlIf == NULL) return false;
 
-    unsigned int propertyId = convertPropertyTypeToPropertyId(t); // FIXME
-    unsigned int unitId = convertPropertyTypeToUnitId(t); // FIXME
-    unsigned int length = getSizeFromPropertyType(t); // FIXME
+    int propertyId = convertPropertyTypeToPropertyId(t);
+    int unitId = convertPropertyTypeToUnitId(t);
+    int length = getSizeFromPropertyType(t); 
+    printf("propertyId: %d\n", propertyId);
+    printf("unitId: %d\n", unitId);
+    printf("length: %d\n", length);
 
     long value;
-
-    kern_return_t err;
-    IOUSBDevRequest request;
-    request.bmRequestType = USBmakebmRequestType(kUSBIn, kUSBClass, kUSBInterface);
-    request.bRequest = UVC_GET_CUR;
-    request.wValue = (propertyId << 8) & 0xFF00;
-    request.wIndex = (unitId << 8) & 0xFF00; // FIXME
-    request.wLength = length;
-    request.pData = &value;
-
-    err = (*mControlIf)->ControlRequest( mControlIf, 0, &request );
-    if ( err != kIOReturnSuccess )
-    {
-        //logger("getProperty: ControlRequest failed\n"); // FIXME
+    
+    if (!getData(mControlIf, UVC_GET_CUR, propertyId, unitId, length, value)) {
+        printf("get cur failed\n");
         return false;
     }
+    printf("value = %ld\n", value);
+
+    long min;
+    if (!getData(mControlIf, UVC_GET_MIN, propertyId, unitId, length, min)) {
+        // printf(..) FIXME
+        return false;
+    }
+    printf("min = %ld\n", min);
     
-    prop = Property(value, 0, 0); // FIXME min, max?
+    long max;
+    if (!getData(mControlIf, UVC_GET_MAX, propertyId, unitId, length, max)) {
+        // printf(..) FIXME
+        return false;
+    }
+    printf("max = %ld\n", max);
+    
+    prop = Property((int)value, (int)min, (int)max);
     return true;
 }
 
@@ -88,9 +163,14 @@ bool MacCameraDevice::setProperty(PropertyType p, int _value)
 
 	if (mControlIf == NULL) return false;
 
-    unsigned int propertyId = convertPropertyTypeToPropertyId(p); // FIXME
-    unsigned int unitId = convertPropertyTypeToUnitId(p); // FIXME
-    unsigned int length = getSizeFromPropertyType(p); // FIXME
+    int propertyId = convertPropertyTypeToPropertyId(p);
+    int unitId = convertPropertyTypeToUnitId(p); 
+    int length = getSizeFromPropertyType(p); 
+
+    printf("propertyId: %d\n", propertyId);
+    printf("unitId: %d\n", unitId);
+    printf("length: %d\n", length);
+
 
     long value = _value;
 
