@@ -14,13 +14,13 @@
 #define UVC_INPUT_TERMINAL_ID  0x01
 #define UVC_PROCESSING_UNIT_ID 0x02
 
-MacCameraDevice::MacCameraDevice(const DeviceProperty& prop)
+MacCameraDevice::MacCameraDevice(const std::string& prop) : mProperty(prop)
 {
+
 	mControlIf = NULL;
-    mProperty = prop;
 
 	std::vector<std::string> dummy;
-	if (!getAllDevices(prop.deviceName, dummy, mControlIf)) {
+	if (!getAllDevices(prop, dummy, mControlIf)) {
 		//logger("MacCameraDevice::MacCameraDevice: getAllDevices failed\n"); // FIXME
 		throw std::runtime_error("Unable to get Jabra devices");
 	} 
@@ -33,20 +33,15 @@ MacCameraDevice::~MacCameraDevice()
 {
 }
 
-bool MacCameraDevice::getJabraDevices(std::vector<DeviceProperty>& devPaths)
+bool MacCameraDevice::getJabraDevices(std::vector<std::string>& devPaths)
 {
     IOUSBInterfaceInterface190 * * tmp = NULL;
 
-	std::vector<std::string> dummy;
-	if (!getAllDevices("", dummy, tmp)) {
+	if (!getAllDevices("", devPaths, tmp)) {
 		//logger("MacCameraDevice::MacCameraDevice: getAllDevices failed\n"); // FIXME
 		return false;
 	} 
 
-    devPaths.resize(dummy.size());
-    for (unsigned k=0;k<devPaths.size();k++) {
-        devPaths[k].deviceName = dummy[k];
-    }
 	return true;
 }
 
@@ -101,23 +96,13 @@ static bool getData(IOUSBInterfaceInterface190 * * mControlIf,
     request.wLength = length;
     request.pData = &value;
 
-    //Now open the interface. This will cause the pipes associated with
-    //the endpoints in the interface descriptor to be instantiated
-    kern_return_t kr = (*mControlIf)->USBInterfaceOpen(mControlIf);
-    if (kr != kIOReturnSuccess) {
-        printf("getData: Unable to open interface (%08x)\n", kr );
-        return false;
-    }
-   
     err = (*mControlIf)->ControlRequest( mControlIf, 0, &request );
     if ( err != kIOReturnSuccess )
     {
-        kr = (*mControlIf)->USBInterfaceClose(mControlIf);
-        printf("getData: Control request failed: %08x", kr );
+        printf("getData: Control request failed\n");
         return false;
     }
 
-    kr = (*mControlIf)->USBInterfaceClose(mControlIf);
     return true;
 }
 
@@ -376,23 +361,4 @@ bool MacCameraDevice::getAllDevices(std::string devSn,
     return true;
 }
 
-#if 0
-int main(int argc, char ** argv)
-{
-    CameraQueryInterface q;
-
-    std::vector<DeviceProperty> devPaths;
-    if (!q.getAllJabraDevices(devPaths)) {
-        printf("hurr\n");
-        return -1;
-    }
-
-    for (unsigned k=0;k<devPaths.size();k++) {
-        printf("%d: %s\n", k, devPaths[k].deviceName.c_str());
-    }
-
-    return 0;
-
-}
-#endif
 #endif

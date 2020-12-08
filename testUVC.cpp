@@ -6,7 +6,7 @@ int main(int argc, char ** argv)
 {
     CameraQueryInterface q;
 
-    std::vector<DeviceProperty> devPaths;
+    std::vector<std::string> devPaths;
     if (!q.getAllJabraDevices(devPaths)) {
         printf("hurr\n");
         return -1;
@@ -14,7 +14,7 @@ int main(int argc, char ** argv)
     
 
     for (unsigned k=0;k<devPaths.size();k++) {
-        printf("%d: %s\n", k, devPaths[k].deviceName.c_str());
+        printf("%d: %s\n", k, devPaths[k].c_str());
     }
 
     std::shared_ptr<CameraDeviceInterface> camera;
@@ -32,7 +32,16 @@ int main(int argc, char ** argv)
         return -1;
     }
     printf("Got brightness yo: current: %d, min: %d, max: %d\n", p.value, p.min, p.max);
-
+    p.value += 20;
+    if (!camera->setProperty(t, p.value)){
+        printf("This camera\'s brightness set function aint workin\n");
+        return -1;
+    }
+    if (!camera->getProperty(t, p)) {
+        printf("This camera\'s brightness aint workin\n");
+        return -1;
+    }
+    printf("Got brightness yo: current: %d, min: %d, max: %d\n", p.value, p.min, p.max);
 
     return 0;
 

@@ -40,12 +40,6 @@ struct DeviceDescriptor{
 	unsigned char   numConfigurations;
 };
 
-struct DeviceProperty {
-    std::string deviceName;
-    std::string VID;
-    std::string PID;
-};
-
 struct CommandInfo {
     unsigned char requestType;
     unsigned char request;
@@ -83,33 +77,33 @@ class CameraDeviceInterface {
 #ifdef _WIN32
 class WindowsCameraDevice : public CameraDeviceInterface {
     public:
-        WindowsCameraDevice(const DeviceProperty& prop);
+        WindowsCameraDevice(const std::string& prop);
         bool getProperty(PropertyType t, Property& prop);
         bool setProperty(PropertyType p, int value);
         bool sendCommand(CommandInfo& info);
-        static bool getJabraDevices(std::vector<DeviceProperty>&);
+        static bool getJabraDevices(std::vector<std::string>&);
 };
 #elif __linux__
 class LinuxCameraDevice : public CameraDeviceInterface {
     public:
-        LinuxCameraDevice(const DeviceProperty& prop);
+        LinuxCameraDevice(const std::string& prop);
         bool getProperty(PropertyType t, Property& prop);
         bool setProperty(PropertyType p, int value);
         bool sendCommand(CommandInfo& info);
-        static bool getJabraDevices(std::vector<DeviceProperty>&);
+        static bool getJabraDevices(std::vector<std::string>&);
 };
 #elif __APPLE__
 class MacCameraDevice : public CameraDeviceInterface {
     public:
-        MacCameraDevice(const DeviceProperty& prop);
+        MacCameraDevice(const std::string& prop);
         virtual ~MacCameraDevice();
         bool getProperty(PropertyType t, Property& prop);
         bool setProperty(PropertyType p, int value);
         bool sendCommand(CommandInfo& info);
-        static bool getJabraDevices(std::vector<DeviceProperty>&);
+        static bool getJabraDevices(std::vector<std::string>&);
     private:
         IOUSBInterfaceInterface190 * * mControlIf;
-        DeviceProperty mProperty;
+        std::string mProperty;
         // return a vector of all jabra devices in allDevs
         // if devSn is "", then return all, else return the specific requested devSn
         static bool getAllDevices(std::string devSn, 
@@ -124,7 +118,7 @@ class CameraQueryInterface {
         virtual ~CameraQueryInterface() {}
         //virtual void setLogger(Logger& l) = 0; // FIXME
         //virtual void setLoggerVerbosity(LOG_LEVEL_E level) = 0;
-        bool getAllJabraDevices(std::vector<DeviceProperty>& devPaths) {
+        bool getAllJabraDevices(std::vector<std::string>& devPaths) {
 #ifdef _WIN32
             return WindowsCameraDevice::getJabraDevices(devPaths);
 #elif __linux__
@@ -133,7 +127,7 @@ class CameraQueryInterface {
             return MacCameraDevice::getJabraDevices(devPaths);
 #endif
         }
-        CameraDeviceInterface * openJabraDevice(const DeviceProperty& prop) {
+        CameraDeviceInterface * openJabraDevice(const std::string& prop) {
             CameraDeviceInterface * cameraDevice;
 #ifdef _WIN32
             cameraDevice = new WindowsCameraDevice(prop);
