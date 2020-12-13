@@ -37,7 +37,7 @@ bool saveFrame(panacast_raw_frame_t * frame){
 int main(int argc, char * argv[])
 {
    MacCameraCapture m;   
-   if (!m.init(1280, 720, PANACAST_FRAME_FORMAT_YUYV)){
+   if (!m.init(1280, 720, PANACAST_FRAME_FORMAT_YUYV, NULL)){
       printf("This code is retarded\n");
       return -1;
    }

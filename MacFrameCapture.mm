@@ -7,6 +7,8 @@
 //
 
 #include "MacFrameCapture.h"
+#include "AVFoundationCapture.h"
+#include <AVFoundation/AVFoundation.h>
 #include <string>
 
 MacCameraCapture::MacCameraCapture()
@@ -14,22 +16,20 @@ MacCameraCapture::MacCameraCapture()
     pthread_mutex_init(&bufferLock, NULL);
     memset(&frames[0], 0, sizeof(frames));
     curr_frame_index = -1;
-    captureDevice = Nil;   
-    mycam = Nil;
+    avfoundationCam = NULL;
 }
 
-bool MacCameraCapture::init(unsigned int width, unsigned int height, panacast_raw_frame_format format)
+bool MacCameraCapture::init(unsigned int width, unsigned int height, panacast_raw_frame_format format, void * captureDevice)
 {
     if (format != PANACAST_FRAME_FORMAT_MJPEG && format != PANACAST_FRAME_FORMAT_YUYV) return false;
     
-    if(!mycam || ![mycam isRunning]) {
+    if(!avfoundationCam) {
         pthread_mutex_lock(&bufferLock);
-        if (!mycam) {
-            mycam = [[AVFoundationCapture alloc] initWithCaptureDevice: captureDevice
-                                                     andWidth:width andHeight:height
-                                                    andFormat:format andCaptureCallback:(AVCaptureCallback *)this];
-        }
-        [mycam startCapture];
+        AVFoundationCapture * avfoundationCamOC = [[AVFoundationCapture alloc] initWithCaptureDevice: (AVCaptureDevice*) captureDevice
+           andWidth:width andHeight:height
+           andFormat:format andCaptureCallback:(AVCaptureCallback *)this];
+        [avfoundationCamOC startCapture];
+        avfoundationCam = (void *)avfoundationCamOC;
         pthread_mutex_unlock(&bufferLock);
         return true;
     }
@@ -54,8 +54,8 @@ struct panacast_raw_frame_t * MacCameraCapture::get_next_frame()
 
 void MacCameraCapture::stop_capture()
 {
-    if (mycam != Nil)
-        [mycam stopCapture];
+    if (avfoundationCam != Nil)
+        [((AVFoundationCapture*)avfoundationCam) stopCapture];
 }
 
 void * MacCameraCapture::handleCapturedFrame(unsigned char * theData,

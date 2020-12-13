@@ -28,9 +28,19 @@ struct panacast_raw_frame_t {
 
 class CaptureInterface {
    public:
-      virtual bool init(unsigned width, unsigned height, panacast_raw_frame_format format) = 0;
+      virtual bool init(unsigned width, unsigned height, panacast_raw_frame_format format, void * captureDevice) = 0;
       virtual struct panacast_raw_frame_t * get_next_frame() = 0;
       virtual void stop_capture() = 0;
+};
+
+class AVCaptureCallback {
+public:
+    virtual void * handleCapturedFrame(unsigned char * theData,
+                                       unsigned width,
+                                       unsigned height,
+                                       panacast_raw_frame_format format,
+                                       int length,
+                                       void * buffer) = 0;
 };
 
 

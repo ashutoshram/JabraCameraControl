@@ -10,16 +10,6 @@
 #import <AVFoundation/AVFoundation.h>
 #include "PCCameraInterface.h"
 
-class AVCaptureCallback {
-public:
-    virtual void * handleCapturedFrame(unsigned char * theData,
-                                       unsigned width,
-                                       unsigned height,
-                                       panacast_raw_frame_format format,
-                                       int length,
-                                       void * buffer) = 0;
-};
-
 @interface AVFoundationCapture : NSObject {
     AVCaptureVideoDataOutput *captureOutput;
     AVCaptureSession *session;

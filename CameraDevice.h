@@ -142,5 +142,39 @@ class CameraQueryInterface {
         }
 };
 
+class CameraStreamInterface {
+    public:
+        CameraStreamInterface(std::string _deviceName, unsigned _width, unsigned _height, std::string _format, unsigned _fps) {
+            deviceName = _deviceName;
+            width = _width;
+            height = _height;
+            format = _format;
+            fps = _fps;
+        }
+
+        void updateParams(unsigned _width, unsigned _height, std::string _format, unsigned _fps) {
+            width = _width;
+            height = _height;
+            format = _format;
+            fps = _fps;
+        }
+
+        bool openStream() {
+        }
+
+        bool getFrame() {
+        }
+
+    private:
+        std::string deviceName;
+        unsigned width;
+        unsigned height;
+        std::string format;
+        unsigned fps;
+        
+        
+
+};
+
 
 #endif /*__CAMERADEVICE_H__*/
