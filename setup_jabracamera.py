@@ -1,21 +1,10 @@
 #!/usr/bin/python
-#
-# python-v4l2capture
-#
-# 2009, 2010, 2011 Fredrik Portstrom
-#
-# I, the copyright holder of this file, hereby release it into the
-# public domain. This applies worldwide. In case this is not legally
-# possible: I grant anyone the right to use this work for any
-# purpose, without any conditions, unless such conditions are
-# required by law.
 import platform
 
 from distutils.core import Extension, setup
 import numpy as np
 
 import os
-os.environ['LDFLAGS'] = '-framework CoreFoundation -framework IOKit'
 
 compile_extra_args = []
 link_extra_args = []
@@ -26,6 +15,7 @@ elif platform.system() == "Darwin":
     compile_extra_args = ["-O3", "-mmacosx-version-min=10.9", "-std=c++11", "-stdlib=libc++", "-Wno-c++11-compat-deprecated-writable-strings"]
     #link_extra_args = ["-stdlib=libc++", "-mmacosx-version-min=10.9",  "-lpthread",  "-framework CoreFoundation",  "-framework IOKit"]
     link_extra_args = ["-stdlib=libc++", "-mmacosx-version-min=10.9",  "-lpthread" ]
+    os.environ['LDFLAGS'] = '-framework CoreFoundation -framework IOKit -framework AVFoundation -framework CoreMedia -framework CoreVideo -framework Foundation'
 
 compile_extra_args.append("-I"+np.get_include())
 
@@ -41,6 +31,6 @@ setup(
         "License :: Public Domain",
         "Programming Language :: C++"],
     ext_modules = [
-        Extension("jabracamera", ["MacCameraDevice.cpp", "JabraCameraPyWrapper.cpp"], 
+        Extension("jabracamera", ["MacCameraDevice.cpp", "JabraCameraPyWrapper.cpp", "AVFoundationCapture.mm", "MacFrameCapture.mm"], 
             extra_compile_args = compile_extra_args,
             extra_link_args = link_extra_args)])

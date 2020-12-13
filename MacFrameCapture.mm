@@ -19,6 +19,10 @@ MacCameraCapture::MacCameraCapture()
     avfoundationCam = NULL;
 }
 
+MacCameraCapture::~MacCameraCapture()
+{
+}
+
 bool MacCameraCapture::init(unsigned int width, unsigned int height, panacast_raw_frame_format format, void * captureDevice)
 {
     if (format != PANACAST_FRAME_FORMAT_MJPEG && format != PANACAST_FRAME_FORMAT_YUYV) return false;

@@ -12,6 +12,7 @@
 class MacCameraCapture : public CaptureInterface, public AVCaptureCallback {
 public:
     MacCameraCapture();
+    virtual ~MacCameraCapture();
     bool init(unsigned width, unsigned height, panacast_raw_frame_format format, void * captureDevice);
     struct panacast_raw_frame_t * get_next_frame();
     void stop_capture();

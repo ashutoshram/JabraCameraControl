@@ -30,6 +30,8 @@ class JabraDriver {
                 return Sharpness;
             } else if (property == "whitebalance") { 
                 return WhiteBalance;
+            } else {
+               return Brightness;
             }
         }
 
@@ -67,15 +69,17 @@ class JabraDriver {
             std::shared_ptr<CameraStreamInterface> csi;
             if (streamMap.find(deviceName) == streamMap.end()) {
                 // not found
-                csi = std::shared_ptr<CameraStreamInterface>(new CameraStreamInterface(deviceName, width, height, format, fps));
+                csi = std::shared_ptr<CameraStreamInterface>(new CameraStreamInterface(deviceName, 1280, 720, "YUYV", 30));
                 streamMap.insert(std::make_pair(deviceName, csi));
             } else {
                 csi = streamMap.at(deviceName);
             }
 
-            
+            if (csi->openStream()) {
+               return csi->getFrame(ptrFrame, length);
+            }
 
-            
+            return false;
         }
 
     private:
@@ -153,14 +157,14 @@ static PyObject *PyJabraCamera_getCameras(PyJabraCamera *self, PyObject *args)
     return tuple;
 }
 
-static PyObject PyJabraCamera_setStreamParams(Video_device *self, PyObject *args, PyObject *keywds)
+static PyObject * PyJabraCamera_setStreamParams(PyJabraCamera *self, PyObject *args, PyObject *keywds)
 {
     int width;
     int height;
-    const char * format;
-    const char * deviceName;
+    const char * format = "";
+    const char * deviceName = "";
     int fps;
-    static char *kwlist [] = {
+    const char *kwlist [] = {
         "deviceName",
         "width",
         "height",
@@ -169,7 +173,8 @@ static PyObject PyJabraCamera_setStreamParams(Video_device *self, PyObject *args
         NULL
     };
 
-    if (!PyArg_ParseTupleAndKeywords(args, keywds, "sii|si", kwlist, deviceName, &width, &height, &format, &fps))
+    
+    if (!PyArg_ParseTupleAndKeywords(args, keywds, "sii|si", const_cast<char **>(kwlist), deviceName, &width, &height, &format, &fps))
     {
         Py_RETURN_FALSE;
     }
@@ -187,7 +192,6 @@ static PyObject PyJabraCamera_setStreamParams(Video_device *self, PyObject *args
 static PyObject *PyJabraCamera_getFrame(PyJabraCamera *self, PyObject *args)
 {
     const char * deviceName;
-    int value;
 
     if (!PyArg_ParseTuple(args, "s", &deviceName)) {
         NULL;
@@ -199,10 +203,10 @@ static PyObject *PyJabraCamera_getFrame(PyJabraCamera *self, PyObject *args)
 
     if (ret) {
         return PyBytes_FromStringAndSize(
-                ptrFrame, length);
+                (char *)ptrFrame, length);
     }
 
-    return NULL;
+    Py_RETURN_NONE;
 }
 
 

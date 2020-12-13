@@ -142,8 +142,8 @@ AVCaptureCallback * callback = NULL;
                 return;
             }
             //Pixel buffer size is actual frame size.
-            GLsizei bufWidth = (int)CVPixelBufferGetWidth(cameraFrame);
-            GLsizei bufHeight = (int)CVPixelBufferGetHeight(cameraFrame);
+            unsigned bufWidth = (unsigned)CVPixelBufferGetWidth(cameraFrame);
+            unsigned bufHeight = (unsigned)CVPixelBufferGetHeight(cameraFrame);
             if (bufWidth != captureWidth || bufHeight != captureHeight) {
                 DBG("captureOutput: incorrect resolution %dx%d - required %dx%d",
                     bufWidth, bufHeight, captureWidth, captureHeight);
@@ -195,7 +195,7 @@ AVCaptureCallback * callback = NULL;
                 
                 CMVideoDimensions dim = CMVideoFormatDescriptionGetDimensions(desc);
                 
-                if (dim.height != captureHeight || dim.width != captureWidth) continue;
+                if ((unsigned)dim.height != captureHeight || (unsigned)dim.width != captureWidth) continue;
                 
                 //NSLog(@"%@, %@", format.mediaType, format.formatDescription);
                 for ( AVFrameRateRange *range in format.videoSupportedFrameRateRanges ) {

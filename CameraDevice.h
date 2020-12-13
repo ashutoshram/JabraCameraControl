@@ -20,6 +20,8 @@
 #include <CoreFoundation/CFNumber.h>
 #endif
 
+#include "MacFrameCapture.h"
+
 //#include "Logger.h" // FIXME
 
 //Structure that holds the USB Device Descriptor values
@@ -150,6 +152,7 @@ class CameraStreamInterface {
             height = _height;
             format = _format;
             fps = _fps;
+            cameraOpened = false;
         }
 
         void updateParams(unsigned _width, unsigned _height, std::string _format, unsigned _fps) {
@@ -160,9 +163,36 @@ class CameraStreamInterface {
         }
 
         bool openStream() {
+
+           if (cameraOpened) return true;
+
+           if (!m) {
+               m.reset(new MacCameraCapture);
+           }
+           
+           if (!m->init(width, height, format == "MJPG" ? PANACAST_FRAME_FORMAT_MJPEG : PANACAST_FRAME_FORMAT_YUYV, NULL)){
+              printf("CameraStreamInterface: openStream: could not initialize camera\n");
+              cameraOpened = false;
+              return false;
+           }
+           
+           cameraOpened = true;
+           return true;
         }
 
-        bool getFrame() {
+        // openStream should have been called at this point
+        bool getFrame(unsigned char * & ptrFrame, unsigned& length) {
+
+           if (!cameraOpened) return false;
+
+           panacast_raw_frame_t * frame = m->get_next_frame();
+           if (frame != NULL) {
+              ptrFrame = frame->buf;
+              unsigned yuyvSize = width * height * 2;
+              length = format == "MJPG" ? frame->size : yuyvSize;
+              return true;
+           }
+           return false;
         }
 
     private:
@@ -171,9 +201,8 @@ class CameraStreamInterface {
         unsigned height;
         std::string format;
         unsigned fps;
-        
-        
-
+        bool cameraOpened;
+        std::unique_ptr<MacCameraCapture> m;   
 };
 
 
