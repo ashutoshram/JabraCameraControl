@@ -24,5 +24,9 @@ while True:
         yuv = yuv.reshape(shape)
         frame1 = convertYUYV2BGR(yuv)
     cv2.imshow("hurr", frame1)
-    cv2.waitKey(1)
+    k = cv2.waitKey(1)
+    if (k == ord("q")):
+        break
+
+        
 

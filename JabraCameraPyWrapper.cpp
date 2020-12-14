@@ -11,253 +11,262 @@
 #include "CameraDevice.h"
 
 class JabraDriver {
-    public:
-        JabraDriver() {
-            cqi.reset(new CameraQueryInterface);
-        }
+   public:
+      JabraDriver() {
+         cqi.reset(new CameraQueryInterface);
+         getCameras(devices);
+      }
 
-        bool getCameras(std::vector<std::string>& devices) {
-            return cqi->getAllJabraDevices(devices);
-        }
+      bool getCameras(std::vector<std::string>& devices_) {
+         return cqi->getAllJabraDevices(devices_);
+      }
 
-        static PropertyType StringToPropertyType(std::string property) {
-            if (property == "brightness") {
-                return Brightness;
-            } else if (property == "contrast") { 
-                return Contrast;
-            } else if (property == "saturation") { 
-                return Saturation;
-            } else if (property == "sharpness") { 
-                return Sharpness;
-            } else if (property == "whitebalance") { 
-                return WhiteBalance;
+      static PropertyType StringToPropertyType(std::string property) {
+         if (property == "brightness") {
+            return Brightness;
+         } else if (property == "contrast") { 
+            return Contrast;
+         } else if (property == "saturation") { 
+            return Saturation;
+         } else if (property == "sharpness") { 
+            return Sharpness;
+         } else if (property == "whitebalance") { 
+            return WhiteBalance;
+         } else {
+            return Brightness;
+         }
+      }
+
+      bool containsDeviceName(std::string deviceName){
+         return (std::find(devices.begin(), devices.end(), deviceName) != devices.end());
+      }
+
+      bool setProperty(std::string deviceName, std::string property, int value) {
+         if (!containsDeviceName(deviceName)) return false;
+         if (property == "brightness" || property == "contrast" || property == "saturation" || property == "sharpness" || property == "whitebalance") { 
+            std::shared_ptr<CameraDeviceInterface> cdi;
+
+            if (camMap.find(deviceName) == camMap.end()) {
+               // not found
+               cdi = std::shared_ptr<CameraDeviceInterface>(cqi->openJabraDevice(deviceName));
+               camMap.insert(std::make_pair(deviceName, cdi));
             } else {
-               return Brightness;
+               cdi = camMap.at(deviceName);
             }
-        }
+            return cdi->setProperty(StringToPropertyType(property), value);
+         }
+         return false;
+      }
 
-        
+      bool setStreamParams(std::string deviceName, unsigned int width, unsigned int height, std::string format, unsigned int fps) {
+         if (!containsDeviceName(deviceName)) return false;
+         std::shared_ptr<CameraStreamInterface> csi;
+         if (streamMap.find(deviceName) == streamMap.end()) {
+            // not found
+            csi = std::shared_ptr<CameraStreamInterface>(new CameraStreamInterface(deviceName, width, height, format, fps));
+            streamMap.insert(std::make_pair(deviceName, csi));
+         } else {
+            csi = streamMap.at(deviceName);
+            csi->updateParams(width, height, format, fps);
+         }
+         return true;
+      }
 
-        bool setProperty(std::string deviceName, std::string property, int value) {
-            if (property == "brightness" || property == "contrast" || property == "saturation" || property == "sharpness" || property == "whitebalance") { 
-                std::shared_ptr<CameraDeviceInterface> cdi;
-                if (camMap.find(deviceName) == camMap.end()) {
-                    // not found
-                    cdi = std::shared_ptr<CameraDeviceInterface>(cqi->openJabraDevice(deviceName));
-                    camMap.insert(std::make_pair(deviceName, cdi));
-                } else {
-                    cdi = camMap.at(deviceName);
-                }
-                return cdi->setProperty(StringToPropertyType(property), value);
-            }
-            return false;
-        }
+      bool getFrame(std::string deviceName, unsigned char *& ptrFrame, unsigned& length) {
+         if (!containsDeviceName(deviceName)) return false;
+         std::shared_ptr<CameraStreamInterface> csi;
+         if (streamMap.find(deviceName) == streamMap.end()) {
+            // not found
+            csi = std::shared_ptr<CameraStreamInterface>(new CameraStreamInterface(deviceName, 1280, 720, "YUYV", 30));
+            streamMap.insert(std::make_pair(deviceName, csi));
+         } else {
+            csi = streamMap.at(deviceName);
+         }
 
-        bool setStreamParams(std::string deviceName, unsigned int width, unsigned int height, std::string format, unsigned int fps) {
-            std::shared_ptr<CameraStreamInterface> csi;
-            if (streamMap.find(deviceName) == streamMap.end()) {
-                // not found
-                csi = std::shared_ptr<CameraStreamInterface>(new CameraStreamInterface(deviceName, width, height, format, fps));
-                streamMap.insert(std::make_pair(deviceName, csi));
-            } else {
-                csi = streamMap.at(deviceName);
-                csi->updateParams(width, height, format, fps);
-            }
-            return true;
-        }
+         if (csi->openStream()) {
+            return csi->getFrame(ptrFrame, length);
+         }
 
-        bool getFrame(std::string deviceName, unsigned char *& ptrFrame, unsigned& length) {
-            std::shared_ptr<CameraStreamInterface> csi;
-            if (streamMap.find(deviceName) == streamMap.end()) {
-                // not found
-                csi = std::shared_ptr<CameraStreamInterface>(new CameraStreamInterface(deviceName, 1280, 720, "YUYV", 30));
-                streamMap.insert(std::make_pair(deviceName, csi));
-            } else {
-                csi = streamMap.at(deviceName);
-            }
+         return false;
+      }
 
-            if (csi->openStream()) {
-               return csi->getFrame(ptrFrame, length);
-            }
+      void freeFrame(std::string deviceName) {
+         if (!containsDeviceName(deviceName)) return;
+         std::shared_ptr<CameraStreamInterface> csi;
+         if (streamMap.find(deviceName) == streamMap.end()) {
+            // not found
+            return;
+         } else {
+            csi = streamMap.at(deviceName);
+         }
+         csi->freeFrame();
+      }
 
-            return false;
-        }
-
-        void freeFrame(std::string deviceName) {
-            std::shared_ptr<CameraStreamInterface> csi;
-            if (streamMap.find(deviceName) == streamMap.end()) {
-                // not found
-                return;
-            } else {
-                csi = streamMap.at(deviceName);
-            }
-            csi->freeFrame();
-        }
-
-    private:
-        std::unique_ptr<CameraQueryInterface> cqi;
-        std::map<std::string, std::shared_ptr<CameraDeviceInterface> > camMap;
-        std::map<std::string, std::shared_ptr<CameraStreamInterface> > streamMap;
+   private:
+      std::unique_ptr<CameraQueryInterface> cqi;
+      std::vector<std::string> devices; 
+      std::map<std::string, std::shared_ptr<CameraDeviceInterface> > camMap;
+      std::map<std::string, std::shared_ptr<CameraStreamInterface> > streamMap;
 };
 
 typedef struct {
-    PyObject_HEAD
-    JabraDriver * ptrObj;
+   PyObject_HEAD
+      JabraDriver * ptrObj;
 } PyJabraCamera;
 
 static PyModuleDef jabracameramodule = {
-    PyModuleDef_HEAD_INIT,
-    "jabracamera",
-    "Work with Jabra Cameras",
-    -1,
-    NULL, NULL, NULL, NULL, NULL
+   PyModuleDef_HEAD_INIT,
+   "jabracamera",
+   "Work with Jabra Cameras",
+   -1,
+   NULL, NULL, NULL, NULL, NULL
 };
 
 static int PyJabraCamera_init(PyJabraCamera *self, PyObject *args, PyObject *kwds)
-// initialize PyJabraCamera Object
+   // initialize PyJabraCamera Object
 {
-    try {
-       self->ptrObj = new JabraDriver(); 
-    } catch (std::runtime_error& e) {
-       PyErr_Format(PyExc_ValueError, "Cannot instantiate CameraQueryInterface");
-       return -1;
-    }
+   try {
+      self->ptrObj = new JabraDriver(); 
+   } catch (std::runtime_error& e) {
+      PyErr_Format(PyExc_ValueError, "Cannot instantiate CameraQueryInterface");
+      return -1;
+   }
 
-    return 0;
+   return 0;
 }
 
 static void PyJabraCamera_dealloc(PyJabraCamera * self)
-// destroy the object
+   // destroy the object
 {
-    delete self->ptrObj;
-    Py_TYPE(self)->tp_free(self);
+   delete self->ptrObj;
+   Py_TYPE(self)->tp_free(self);
 }
 
 static PyObject *PyJabraCamera_setProperty(PyJabraCamera *self, PyObject *args)
 {
-    const char * property;
-    const char * deviceName;
-    int value;
+   const char * property;
+   const char * deviceName;
+   int value;
 
-    if (!PyArg_ParseTuple(args, "ssi", &deviceName, &property, &value)) {
-        Py_RETURN_FALSE;
-    }
+   if (!PyArg_ParseTuple(args, "ssi", &deviceName, &property, &value)) {
+      Py_RETURN_FALSE;
+   }
 
-    bool ret = (self->ptrObj)->setProperty(deviceName, property, value);
+   bool ret = (self->ptrObj)->setProperty(deviceName, property, value);
 
-    if (ret) {
-        Py_RETURN_TRUE;
-    }
+   if (ret) {
+      Py_RETURN_TRUE;
+   }
 
-    Py_RETURN_FALSE;
+   Py_RETURN_FALSE;
 }
 
 static PyObject *PyJabraCamera_getCameras(PyJabraCamera *self, PyObject *args)
 {
-    std::vector<std::string> list;
-    (self->ptrObj)->getCameras(list);
+   std::vector<std::string> list;
+   (self->ptrObj)->getCameras(list);
 
-    PyObject * tuple = nullptr;
-    if (list.size() > 0) {
-        tuple = PyTuple_New(list.size());
-        for(size_t k=0;k<list.size();k++) {
-            PyObject * pValue = PyUnicode_FromString(list[k].c_str());
-            PyTuple_SetItem(tuple, k, pValue);
-        }
-    }
-    
-    return tuple;
+   PyObject * tuple = nullptr;
+   if (list.size() > 0) {
+      tuple = PyTuple_New(list.size());
+      for(size_t k=0;k<list.size();k++) {
+         PyObject * pValue = PyUnicode_FromString(list[k].c_str());
+         PyTuple_SetItem(tuple, k, pValue);
+      }
+   }
+
+   return tuple;
 }
 
 static PyObject * PyJabraCamera_setStreamParams(PyJabraCamera *self, PyObject *args, PyObject *keywds)
 {
-    int width;
-    int height;
-    const char * format = "YUYV";
-    const char * deviceName = "";
-    int fps = 30;
-    const char *kwlist [] = {
-        "deviceName",
-        "width",
-        "height",
-        "format",
-        "fps",
-        NULL
-    };
+   int width;
+   int height;
+   const char * format = "YUYV";
+   const char * deviceName = "";
+   int fps = 30;
+   const char *kwlist [] = {
+      "deviceName",
+      "width",
+      "height",
+      "format",
+      "fps",
+      NULL
+   };
 
-    
-    if (!PyArg_ParseTupleAndKeywords(args, keywds, "sii|si", const_cast<char **>(kwlist), &deviceName, &width, &height, &format, &fps))
-    {
-        Py_RETURN_FALSE;
-    }
 
-    bool ret = (self->ptrObj)->setStreamParams(deviceName, width, height, format, fps);
+   if (!PyArg_ParseTupleAndKeywords(args, keywds, "sii|si", const_cast<char **>(kwlist), &deviceName, &width, &height, &format, &fps))
+   {
+      Py_RETURN_FALSE;
+   }
 
-    if (ret) {
-        Py_RETURN_TRUE;
-    }
+   bool ret = (self->ptrObj)->setStreamParams(deviceName, width, height, format, fps);
 
-    Py_RETURN_FALSE;
-        
+   if (ret) {
+      Py_RETURN_TRUE;
+   }
+
+   Py_RETURN_FALSE;
+
 }
 
 static PyObject *PyJabraCamera_getFrame(PyJabraCamera *self, PyObject *args)
 {
-    const char * deviceName;
+   const char * deviceName;
 
-    if (!PyArg_ParseTuple(args, "s", &deviceName)) {
-        NULL;
-    }
+   if (!PyArg_ParseTuple(args, "s", &deviceName)) {
+      NULL;
+   }
 
-    unsigned char * ptrFrame;
-    unsigned length;
-    bool ret = (self->ptrObj)->getFrame(deviceName, ptrFrame, length);
+   unsigned char * ptrFrame;
+   unsigned length;
+   bool ret = (self->ptrObj)->getFrame(deviceName, ptrFrame, length);
 
-    if (ret) {
-        PyObject * result = PyBytes_FromStringAndSize( (char *)ptrFrame, length);
-        (self->ptrObj)->freeFrame(deviceName);
-        return result;
-    }
+   if (ret) {
+      PyObject * result = PyBytes_FromStringAndSize( (char *)ptrFrame, length);
+      (self->ptrObj)->freeFrame(deviceName);
+      return result;
+   }
 
-    Py_RETURN_NONE;
+   Py_RETURN_NONE;
 }
 
 
 
 static PyMethodDef PyJabraCamera_methods[] = {
-    { "setStreamParams", (PyCFunction)PyJabraCamera_setStreamParams, METH_VARARGS | METH_KEYWORDS, "setStreamParams(width, height, format, fps)"},
-    { "getFrame", (PyCFunction)PyJabraCamera_getFrame, METH_VARARGS, "Get a Frame"},
-    { "setProperty", (PyCFunction)PyJabraCamera_setProperty,    METH_VARARGS,  "Set property" },
-    { "getCameras", (PyCFunction)PyJabraCamera_getCameras,    METH_VARARGS,  "Get list of cameras" },
-    {NULL}  /* Sentinel */
+   { "setStreamParams", (PyCFunction)PyJabraCamera_setStreamParams, METH_VARARGS | METH_KEYWORDS, "setStreamParams(width, height, format, fps)"},
+   { "getFrame", (PyCFunction)PyJabraCamera_getFrame, METH_VARARGS, "Get a Frame"},
+   { "setProperty", (PyCFunction)PyJabraCamera_setProperty,    METH_VARARGS,  "Set property" },
+   { "getCameras", (PyCFunction)PyJabraCamera_getCameras,    METH_VARARGS,  "Get list of cameras" },
+   {NULL}  /* Sentinel */
 };
 
 static PyTypeObject PyJabraCameraType = { PyVarObject_HEAD_INIT(NULL, 0)
-                                    "jabracamera.JabraCamera"   /* tp_name */
-                                };
+   "jabracamera.JabraCamera"   /* tp_name */
+};
 
 
 PyMODINIT_FUNC PyInit_jabracamera(void)
-// create the module
+   // create the module
 {
-    PyObject* m;
+   PyObject* m;
 
-    PyJabraCameraType.tp_new = PyType_GenericNew;
-    PyJabraCameraType.tp_basicsize=sizeof(PyJabraCamera);
-    PyJabraCameraType.tp_dealloc=(destructor) PyJabraCamera_dealloc;
-    PyJabraCameraType.tp_flags=Py_TPFLAGS_DEFAULT;
-    PyJabraCameraType.tp_doc="JabraCamera objects";
-    PyJabraCameraType.tp_methods=PyJabraCamera_methods;
-    PyJabraCameraType.tp_init=(initproc)PyJabraCamera_init;
+   PyJabraCameraType.tp_new = PyType_GenericNew;
+   PyJabraCameraType.tp_basicsize=sizeof(PyJabraCamera);
+   PyJabraCameraType.tp_dealloc=(destructor) PyJabraCamera_dealloc;
+   PyJabraCameraType.tp_flags=Py_TPFLAGS_DEFAULT;
+   PyJabraCameraType.tp_doc="JabraCamera objects";
+   PyJabraCameraType.tp_methods=PyJabraCamera_methods;
+   PyJabraCameraType.tp_init=(initproc)PyJabraCamera_init;
 
-    if (PyType_Ready(&PyJabraCameraType) < 0)
-        return NULL;
+   if (PyType_Ready(&PyJabraCameraType) < 0)
+      return NULL;
 
-    m = PyModule_Create(&jabracameramodule);
-    if (m == NULL)
-        return NULL;
+   m = PyModule_Create(&jabracameramodule);
+   if (m == NULL)
+      return NULL;
 
-    Py_INCREF(&PyJabraCameraType);
-    PyModule_AddObject(m, "JabraCamera", (PyObject *)&PyJabraCameraType); // Add JabraCamera object to the module
-    return m;
+   Py_INCREF(&PyJabraCameraType);
+   PyModule_AddObject(m, "JabraCamera", (PyObject *)&PyJabraCameraType); // Add JabraCamera object to the module
+   return m;
 }
