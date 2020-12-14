@@ -97,7 +97,7 @@ class LinuxCameraDevice : public CameraDeviceInterface {
 #elif __APPLE__
 class MacCameraDevice : public CameraDeviceInterface {
     public:
-        MacCameraDevice(const std::string& prop);
+        MacCameraDevice(const std::string& deviceName);
         virtual ~MacCameraDevice();
         bool getProperty(PropertyType t, Property& prop);
         bool setProperty(PropertyType p, int value);
@@ -105,7 +105,7 @@ class MacCameraDevice : public CameraDeviceInterface {
         static bool getJabraDevices(std::vector<std::string>&);
     private:
         IOUSBInterfaceInterface190 * * mControlIf;
-        std::string mProperty;
+        std::string mDeviceName;
         // return a vector of all jabra devices in allDevs
         // if devSn is "", then return all, else return the specific requested devSn
         static bool getAllDevices(std::string devSn, 

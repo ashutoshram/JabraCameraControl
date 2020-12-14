@@ -6,15 +6,28 @@ import sys
 r = jabracamera.JabraCamera()
 
 dn = r.getCameras()
-print(dn)
+if dn is None:
+    print('No PanaCast cameras found')
+    sys.exit(1)
+
+print('Cameras found: ', dn)
 
 def convertYUYV2BGR(yuyv):
     return cv2.cvtColor(yuyv, cv2.COLOR_YUV2BGR_YUYV)
 
+width = 1280
+height = 720
 format_ = 'mjpg'
-r.setStreamParams(deviceName=dn[0], width=1280, height=720, format=format_, fps=30)
+if not r.setStreamParams(deviceName=dn[0], width=width, height=height, format=format_, fps=30):
+    print('Unable to set stream params')
+    sys.exit(1)
+
 f = r.getProperty(dn[0], 'brightness')
-print(f)
+if f is not None:
+    print('getProperty(brightness) = ', f)
+else:
+    print('getProperty failed')
+
 while True:
     raw = r.getFrame(dn[0])
     if raw is None: continue
@@ -22,7 +35,7 @@ while True:
         frame1 = cv2.imdecode(np.fromstring(raw, dtype=np.uint8), cv2.IMREAD_UNCHANGED)
     else:
         yuv = np.frombuffer(raw, dtype=np.uint8)
-        shape=(720, 1280, 2)
+        shape=(height, width, 2)
         yuv = yuv.reshape(shape)
         frame1 = convertYUYV2BGR(yuv)
     cv2.imshow("hurr", frame1)

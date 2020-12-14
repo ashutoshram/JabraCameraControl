@@ -41,36 +41,37 @@ class JabraDriver {
          return (std::find(devices.begin(), devices.end(), deviceName) != devices.end());
       }
 
+      bool isValidPropertyName(std::string propertyName){
+         return (std::find(validPropertyNames.begin(), validPropertyNames.end(), propertyName) != validPropertyNames.end());
+      }
+
       bool getProperty(std::string deviceName, std::string property, Property& propval) {
          if (!containsDeviceName(deviceName)) return false;
-         if (property == "brightness" || property == "contrast" || property == "saturation" || property == "sharpness" || property == "whitebalance") { 
-            std::shared_ptr<CameraDeviceInterface> cdi;
+         if (!isValidPropertyName(property)) return false;
+         std::shared_ptr<CameraDeviceInterface> cdi;
 
-            if (camMap.find(deviceName) == camMap.end()) {
-               cdi = std::shared_ptr<CameraDeviceInterface>(cqi->openJabraDevice(deviceName));
-               camMap.insert(std::make_pair(deviceName, cdi));
-            } else {
-               cdi = camMap.at(deviceName);
-            }
-            return cdi->getProperty(StringToPropertyType(property), propval);
+         if (camMap.find(deviceName) == camMap.end()) {
+            cdi = std::shared_ptr<CameraDeviceInterface>(cqi->openJabraDevice(deviceName));
+            camMap.insert(std::make_pair(deviceName, cdi));
+         } else {
+            cdi = camMap.at(deviceName);
          }
-         return false;
+         return cdi->getProperty(StringToPropertyType(property), propval);
       }
 
       bool setProperty(std::string deviceName, std::string property, int value) {
          if (!containsDeviceName(deviceName)) return false;
-         if (property == "brightness" || property == "contrast" || property == "saturation" || property == "sharpness" || property == "whitebalance") { 
-            std::shared_ptr<CameraDeviceInterface> cdi;
+         if (!isValidPropertyName(property)) return false;
+         std::shared_ptr<CameraDeviceInterface> cdi;
 
-            if (camMap.find(deviceName) == camMap.end()) {
-               // not found
-               cdi = std::shared_ptr<CameraDeviceInterface>(cqi->openJabraDevice(deviceName));
-               camMap.insert(std::make_pair(deviceName, cdi));
-            } else {
-               cdi = camMap.at(deviceName);
-            }
-            return cdi->setProperty(StringToPropertyType(property), value);
+         if (camMap.find(deviceName) == camMap.end()) {
+            // not found
+            cdi = std::shared_ptr<CameraDeviceInterface>(cqi->openJabraDevice(deviceName));
+            camMap.insert(std::make_pair(deviceName, cdi));
+         } else {
+            cdi = camMap.at(deviceName);
          }
+         return cdi->setProperty(StringToPropertyType(property), value);
          return false;
       }
 
@@ -123,6 +124,7 @@ class JabraDriver {
       std::vector<std::string> devices; 
       std::map<std::string, std::shared_ptr<CameraDeviceInterface> > camMap;
       std::map<std::string, std::shared_ptr<CameraStreamInterface> > streamMap;
+      std::vector<std::string> validPropertyNames = {"brightness", "contrast", "saturation", "sharpness", "whitebalance"};
 };
 
 typedef struct {
@@ -200,16 +202,16 @@ static PyObject *PyJabraCamera_getCameras(PyJabraCamera *self, PyObject *args)
    std::vector<std::string> list;
    (self->ptrObj)->getCameras(list);
 
-   PyObject * tuple = nullptr;
    if (list.size() > 0) {
-      tuple = PyTuple_New(list.size());
+      PyObject * tuple = PyTuple_New(list.size());
       for(size_t k=0;k<list.size();k++) {
          PyObject * pValue = PyUnicode_FromString(list[k].c_str());
          PyTuple_SetItem(tuple, k, pValue);
       }
+      return tuple;
    }
 
-   return tuple;
+   Py_RETURN_NONE;
 }
 
 static PyObject * PyJabraCamera_setStreamParams(PyJabraCamera *self, PyObject *args, PyObject *keywds)

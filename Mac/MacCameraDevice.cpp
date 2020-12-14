@@ -14,13 +14,14 @@
 #define UVC_INPUT_TERMINAL_ID  0x01
 #define UVC_PROCESSING_UNIT_ID 0x02
 
-MacCameraDevice::MacCameraDevice(const std::string& prop) : mProperty(prop)
+MacCameraDevice::MacCameraDevice(const std::string& deviceName) : mDeviceName(deviceName)
 {
 
 	mControlIf = NULL;
 
 	std::vector<std::string> dummy;
-	if (!getAllDevices(prop, dummy, mControlIf)) {
+   // get the control interface for the device and cache it
+	if (!getAllDevices(deviceName, dummy, mControlIf)) {
 		//logger("MacCameraDevice::MacCameraDevice: getAllDevices failed\n"); // FIXME
 		throw std::runtime_error("Unable to get Jabra devices");
 	} 
@@ -99,7 +100,7 @@ static bool getData(IOUSBInterfaceInterface190 * * mControlIf,
     err = (*mControlIf)->ControlRequest( mControlIf, 0, &request );
     if ( err != kIOReturnSuccess )
     {
-        printf("getData: Control request failed\n");
+        //printf("getData: Control request failed\n");
         return false;
     }
 
@@ -113,31 +114,31 @@ bool MacCameraDevice::getProperty(PropertyType t, Property& prop)
     int propertyId = convertPropertyTypeToPropertyId(t);
     int unitId = convertPropertyTypeToUnitId(t);
     int length = getSizeFromPropertyType(t); 
-    printf("propertyId: %d\n", propertyId);
-    printf("unitId: %d\n", unitId);
-    printf("length: %d\n", length);
+    //printf("propertyId: %d\n", propertyId);
+    //printf("unitId: %d\n", unitId);
+    //printf("length: %d\n", length);
 
     long value;
     
     if (!getData(mControlIf, UVC_GET_CUR, propertyId, unitId, length, value)) {
-        printf("get cur failed\n");
+        printf("MacCameraDevice:getProperty: get cur failed\n");
         return false;
     }
-    printf("value = %ld\n", value);
+    //printf("value = %ld\n", value);
 
     long min;
     if (!getData(mControlIf, UVC_GET_MIN, propertyId, unitId, length, min)) {
-        // printf(..) FIXME
+        printf("MacCameraDevice:getProperty: get mix failed\n");
         return false;
     }
-    printf("min = %ld\n", min);
+    //printf("min = %ld\n", min);
     
     long max;
     if (!getData(mControlIf, UVC_GET_MAX, propertyId, unitId, length, max)) {
-        // printf(..) FIXME
+        printf("MacCameraDevice:getProperty: get max failed\n");
         return false;
     }
-    printf("max = %ld\n", max);
+    //printf("max = %ld\n", max);
     
     prop = Property((int)value, (int)min, (int)max);
     return true;
@@ -152,9 +153,9 @@ bool MacCameraDevice::setProperty(PropertyType p, int _value)
     int unitId = convertPropertyTypeToUnitId(p); 
     int length = getSizeFromPropertyType(p); 
 
-    printf("propertyId: %d\n", propertyId);
-    printf("unitId: %d\n", unitId);
-    printf("length: %d\n", length);
+    //printf("propertyId: %d\n", propertyId);
+    //printf("unitId: %d\n", unitId);
+    //printf("length: %d\n", length);
 
 
     long value = _value;
