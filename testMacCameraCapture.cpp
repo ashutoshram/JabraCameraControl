@@ -11,7 +11,7 @@ double time_stamp ()
    return t.tv_sec + t.tv_usec*1e-6;
 }
 
-bool saveFrame(panacast_raw_frame_t * frame){
+bool saveFrame(RawFrame * frame){
    const char * name = frame->format == PANACAST_FRAME_FORMAT_YUYV ?"shutup.yuyv" : "shutup.jpg";
    FILE * panafile = fopen(name, "wb");
    
@@ -45,20 +45,21 @@ int main(int argc, char * argv[])
    double startTime = time_stamp();
    double secondsToCount = 5;
    int counter = 0;
-   unsigned int microseconds = 1e6/30;
+   unsigned int microseconds = 1e6/40;
    printf("sleep between frames = %u\n", microseconds);
 
-   bool flag = true;
+   bool saveFrameFlag = false;
    while (true) {
 
-      //printf("main: calling get_next_frame\n");
-      panacast_raw_frame_t * frame = m.get_next_frame();
+      //printf("main: calling getNextFrame\n");
+      RawFrame * frame = m.getNextFrame();
 
       if (frame != NULL) {
-         if (flag) {
+         if (saveFrameFlag) {
             saveFrame(frame);
-            flag = false;
+            saveFrameFlag = false;
          }
+         m.freeFrame(); // tell MacCameraCapture that we are done with this frame
 
          counter ++;
          double secondsPassed = (double)(time_stamp() - startTime);
@@ -74,7 +75,7 @@ int main(int argc, char * argv[])
          }
       }
       
-      usleep(microseconds);
+      //usleep(microseconds);
    }
    
 }

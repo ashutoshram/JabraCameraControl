@@ -180,12 +180,12 @@ class CameraStreamInterface {
            return true;
         }
 
-        // openStream should have been called at this point
         bool getFrame(unsigned char * & ptrFrame, unsigned& length) {
 
+           // openStream should have been called at this point
            if (!cameraOpened) return false;
 
-           panacast_raw_frame_t * frame = m->get_next_frame();
+           RawFrame * frame = m->getNextFrame();
            if (frame != NULL) {
               ptrFrame = frame->buf;
               unsigned yuyvSize = width * height * 2;
@@ -193,6 +193,10 @@ class CameraStreamInterface {
               return true;
            }
            return false;
+        }
+
+        void freeFrame() {
+           m->freeFrame();
         }
 
     private:

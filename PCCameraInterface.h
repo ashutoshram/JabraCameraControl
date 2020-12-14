@@ -7,7 +7,7 @@
 #define PCCAMERAINTERFACE_H 
 
 #include <string>
-enum panacast_raw_frame_format {
+enum RawFrameFormat {
    PANACAST_FRAME_FORMAT_YUYV,
    PANACAST_FRAME_FORMAT_UYVY,
    PANACAST_FRAME_FORMAT_MJPEG,
@@ -15,12 +15,12 @@ enum panacast_raw_frame_format {
    PANACAST_FRAME_FORMAT_NV12,
 };
 
-struct panacast_raw_frame_t {
+struct RawFrame {
    unsigned char *buf;
    int size; //JPEG size 
    volatile int in_use;
    void *private_data;
-   enum panacast_raw_frame_format  format;
+   enum RawFrameFormat  format;
    unsigned width;
    unsigned height;
 };
@@ -28,9 +28,9 @@ struct panacast_raw_frame_t {
 
 class CaptureInterface {
    public:
-      virtual bool init(unsigned width, unsigned height, panacast_raw_frame_format format, void * captureDevice) = 0;
-      virtual struct panacast_raw_frame_t * get_next_frame() = 0;
-      virtual void stop_capture() = 0;
+      virtual bool init(unsigned width, unsigned height, RawFrameFormat format, void * captureDevice) = 0;
+      virtual struct RawFrame * getNextFrame() = 0;
+      virtual void stopCapture() = 0;
 };
 
 class AVCaptureCallback {
@@ -38,7 +38,7 @@ public:
     virtual void * handleCapturedFrame(unsigned char * theData,
                                        unsigned width,
                                        unsigned height,
-                                       panacast_raw_frame_format format,
+                                       RawFrameFormat format,
                                        int length,
                                        void * buffer) = 0;
 };

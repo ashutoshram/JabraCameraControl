@@ -31,7 +31,7 @@
 volatile CMSampleBufferRef spBufSrc = Nil;
 unsigned captureWidth;
 unsigned captureHeight;
-panacast_raw_frame_format captureFormat;
+RawFrameFormat captureFormat;
 
 AVCaptureCallback * callback = NULL;
 
@@ -39,7 +39,7 @@ AVCaptureCallback * callback = NULL;
 - (id) initWithCaptureDevice:(AVCaptureDevice *) device
                     andWidth:(unsigned)width
                    andHeight:(unsigned)height
-                   andFormat:(panacast_raw_frame_format)format
+                   andFormat:(RawFrameFormat)format
           andCaptureCallback:(AVCaptureCallback*)cb;
 {
     if (self = [super init]){

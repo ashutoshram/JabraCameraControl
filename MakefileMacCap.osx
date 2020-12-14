@@ -1,4 +1,4 @@
-CPP_SRCS = testMacCameraCapture.cpp 
+CPP_SRCS = testMacCameraCapture.cpp  utils.cpp
 MM_SRCS = AVFoundationCapture.mm MacFrameCapture.mm 
 OBJS = $(patsubst %.cpp, %.o, $(CPP_SRCS))
 OBJS += $(patsubst %.mm, %.o, $(MM_SRCS))

@@ -82,6 +82,17 @@ class JabraDriver {
             return false;
         }
 
+        void freeFrame(std::string deviceName) {
+            std::shared_ptr<CameraStreamInterface> csi;
+            if (streamMap.find(deviceName) == streamMap.end()) {
+                // not found
+                return;
+            } else {
+                csi = streamMap.at(deviceName);
+            }
+            csi->freeFrame();
+        }
+
     private:
         std::unique_ptr<CameraQueryInterface> cqi;
         std::map<std::string, std::shared_ptr<CameraDeviceInterface> > camMap;
@@ -202,8 +213,9 @@ static PyObject *PyJabraCamera_getFrame(PyJabraCamera *self, PyObject *args)
     bool ret = (self->ptrObj)->getFrame(deviceName, ptrFrame, length);
 
     if (ret) {
-        return PyBytes_FromStringAndSize(
-                (char *)ptrFrame, length);
+        PyObject * result = PyBytes_FromStringAndSize( (char *)ptrFrame, length);
+        (self->ptrObj)->freeFrame(deviceName);
+        return result;
     }
 
     Py_RETURN_NONE;

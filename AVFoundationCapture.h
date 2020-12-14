@@ -25,7 +25,7 @@
 - (id) initWithCaptureDevice:(AVCaptureDevice *) device
                     andWidth:(unsigned)width
                    andHeight:(unsigned)height
-                   andFormat:(panacast_raw_frame_format)format
+                   andFormat:(RawFrameFormat)format
           andCaptureCallback:(AVCaptureCallback*)cb;
 
 - (void) dealloc;

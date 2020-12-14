@@ -31,6 +31,6 @@ setup(
         "License :: Public Domain",
         "Programming Language :: C++"],
     ext_modules = [
-        Extension("jabracamera", ["MacCameraDevice.cpp", "JabraCameraPyWrapper.cpp", "AVFoundationCapture.mm", "MacFrameCapture.mm"], 
+        Extension("jabracamera", ["MacCameraDevice.cpp", "JabraCameraPyWrapper.cpp", "utils.cpp", "AVFoundationCapture.mm", "MacFrameCapture.mm"], 
             extra_compile_args = compile_extra_args,
             extra_link_args = link_extra_args)])
