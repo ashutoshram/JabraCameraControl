@@ -1,0 +1,27 @@
+CPP_SRCS = testMacCameraCapture.cpp  utils.cpp
+MM_SRCS = AVFoundationCapture.mm MacFrameCapture.mm 
+OBJS = $(patsubst %.cpp, %.o, $(CPP_SRCS))
+OBJS += $(patsubst %.mm, %.o, $(MM_SRCS))
+
+EXE = testCap
+
+CXXFLAGS ?= -Wall -I. -std=c++11 -g -O0
+CFLAGS ?= -Wall -I.  -g -O0
+LDFLAGS += -lpthread -framework CoreFoundation -framework IOKit -framework AVFoundation -framework CoreMedia -framework CoreVideo -framework Foundation
+CXX ?= c++
+CC ?= c 
+AR ?= ar
+
+default : $(EXE) 
+
+%.o : %.mm
+	$(CXX) -c -o $@ $(CXXFLAGS) $<
+
+%.o : %.cpp
+	$(CXX) -c -o $@ $(CXXFLAGS) $<
+
+$(EXE) : $(OBJS)
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDFLAGS) 
+
+clean: 
+	rm -f $(EXE) $(OBJS) 

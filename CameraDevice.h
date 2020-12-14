@@ -206,7 +206,9 @@ class CameraStreamInterface {
         std::string format;
         unsigned fps;
         bool cameraOpened;
+#ifdef __APPLE__
         std::unique_ptr<MacCameraCapture> m;   
+#endif
 };
 
 
