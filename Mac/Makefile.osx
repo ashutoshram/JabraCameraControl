@@ -1,14 +1,13 @@
 CPP_SRCS = MacCameraDevice.cpp
 C_SRCS = 
 
-
 OBJS = $(patsubst %.cpp, %.o, $(CPP_SRCS))
 OBJS += $(patsubst %.c, %.o, $(C_SRCS))
 
 LIB = UVC.a
 EXE = testUVC
 
-CXXFLAGS ?= -Wall -I. -std=c++11 -g -O0
+CXXFLAGS ?= -Wall -I. -std=c++11 -g -O0 -I..
 CFLAGS ?= -Wall -I.  -g -O0
 LDFLAGS += -lpthread -framework CoreFoundation -framework IOKit
 CXX ?= c++
