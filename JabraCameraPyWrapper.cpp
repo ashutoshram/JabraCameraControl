@@ -1,4 +1,5 @@
 #include <Python.h>
+#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 #include <numpy/ndarraytypes.h>
 
 #include <cstdio>
@@ -172,9 +173,9 @@ static PyObject * PyJabraCamera_setStreamParams(PyJabraCamera *self, PyObject *a
 {
     int width;
     int height;
-    const char * format = "";
+    const char * format = "YUYV";
     const char * deviceName = "";
-    int fps;
+    int fps = 30;
     const char *kwlist [] = {
         "deviceName",
         "width",
@@ -185,7 +186,7 @@ static PyObject * PyJabraCamera_setStreamParams(PyJabraCamera *self, PyObject *a
     };
 
     
-    if (!PyArg_ParseTupleAndKeywords(args, keywds, "sii|si", const_cast<char **>(kwlist), deviceName, &width, &height, &format, &fps))
+    if (!PyArg_ParseTupleAndKeywords(args, keywds, "sii|si", const_cast<char **>(kwlist), &deviceName, &width, &height, &format, &fps))
     {
         Py_RETURN_FALSE;
     }

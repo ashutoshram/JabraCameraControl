@@ -170,7 +170,7 @@ class CameraStreamInterface {
                m.reset(new MacCameraCapture);
            }
            
-           if (!m->init(width, height, format == "MJPG" ? PANACAST_FRAME_FORMAT_MJPEG : PANACAST_FRAME_FORMAT_YUYV, NULL)){
+           if (!m->init(width, height, (format == "MJPG" || format == "mjpg") ? PANACAST_FRAME_FORMAT_MJPEG : PANACAST_FRAME_FORMAT_YUYV, NULL)){
               printf("CameraStreamInterface: openStream: could not initialize camera\n");
               cameraOpened = false;
               return false;
