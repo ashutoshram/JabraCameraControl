@@ -13,6 +13,8 @@ def convertYUYV2BGR(yuyv):
 
 format_ = 'mjpg'
 r.setStreamParams(deviceName=dn[0], width=1280, height=720, format=format_, fps=30)
+f = r.getProperty(dn[0], 'brightness')
+print(f)
 while True:
     raw = r.getFrame(dn[0])
     if raw is None: continue

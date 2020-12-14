@@ -41,6 +41,22 @@ class JabraDriver {
          return (std::find(devices.begin(), devices.end(), deviceName) != devices.end());
       }
 
+      bool getProperty(std::string deviceName, std::string property, Property& propval) {
+         if (!containsDeviceName(deviceName)) return false;
+         if (property == "brightness" || property == "contrast" || property == "saturation" || property == "sharpness" || property == "whitebalance") { 
+            std::shared_ptr<CameraDeviceInterface> cdi;
+
+            if (camMap.find(deviceName) == camMap.end()) {
+               cdi = std::shared_ptr<CameraDeviceInterface>(cqi->openJabraDevice(deviceName));
+               camMap.insert(std::make_pair(deviceName, cdi));
+            } else {
+               cdi = camMap.at(deviceName);
+            }
+            return cdi->getProperty(StringToPropertyType(property), propval);
+         }
+         return false;
+      }
+
       bool setProperty(std::string deviceName, std::string property, int value) {
          if (!containsDeviceName(deviceName)) return false;
          if (property == "brightness" || property == "contrast" || property == "saturation" || property == "sharpness" || property == "whitebalance") { 
@@ -142,6 +158,24 @@ static void PyJabraCamera_dealloc(PyJabraCamera * self)
    Py_TYPE(self)->tp_free(self);
 }
 
+static PyObject *PyJabraCamera_getProperty(PyJabraCamera *self, PyObject *args)
+{
+   const char * property;
+   const char * deviceName;
+   Property propVal;
+
+   if (!PyArg_ParseTuple(args, "ss", &deviceName, &property)){
+      Py_RETURN_NONE;
+   }
+
+   bool ret = (self->ptrObj)->getProperty(deviceName, property, propVal);
+
+   if (ret) {
+      return Py_BuildValue("iii", propVal.value, propVal.min, propVal.max);
+   }
+   Py_RETURN_NONE;
+}
+
 static PyObject *PyJabraCamera_setProperty(PyJabraCamera *self, PyObject *args)
 {
    const char * property;
@@ -236,6 +270,7 @@ static PyObject *PyJabraCamera_getFrame(PyJabraCamera *self, PyObject *args)
 static PyMethodDef PyJabraCamera_methods[] = {
    { "setStreamParams", (PyCFunction)PyJabraCamera_setStreamParams, METH_VARARGS | METH_KEYWORDS, "setStreamParams(width, height, format, fps)"},
    { "getFrame", (PyCFunction)PyJabraCamera_getFrame, METH_VARARGS, "Get a Frame"},
+   { "getProperty", (PyCFunction)PyJabraCamera_getProperty,    METH_VARARGS,  "Get property" },
    { "setProperty", (PyCFunction)PyJabraCamera_setProperty,    METH_VARARGS,  "Set property" },
    { "getCameras", (PyCFunction)PyJabraCamera_getCameras,    METH_VARARGS,  "Get list of cameras" },
    {NULL}  /* Sentinel */
