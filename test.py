@@ -28,6 +28,18 @@ if f is not None:
 else:
     print('getProperty failed')
 
+f = r.getProperty(dn[0], 'contrast')
+if f is not None:
+    print('getProperty(contrast) = ', f)
+else:
+    print('getProperty failed')
+
+f = r.getProperty(dn[0], 'sharpness')
+if f is not None:
+    print('getProperty(sharpness) = ', f)
+else:
+    print('getProperty failed')
+
 while True:
     raw = r.getFrame(dn[0])
     if raw is None: continue
