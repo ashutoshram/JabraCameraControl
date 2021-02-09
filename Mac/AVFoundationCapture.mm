@@ -305,6 +305,7 @@ AVCaptureCallback * callback = NULL;
     
     for (AVCaptureDevice *device in devices)
     {
+        NSLog(@"refreshDevice: device.localizedName = %@", device.localizedName);
         AVCaptureDevice *panaCastCamera = [self getPanaCastDevice: device];
         if (panaCastCamera) {
             [pcDevs addObject: panaCastCamera];

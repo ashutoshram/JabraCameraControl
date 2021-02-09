@@ -9,20 +9,21 @@
 
 #define UVC_SET_CUR 0x01
 
-#define PANACAST_VENDOR_ID 0x2b93
+#define ALTIA_VENDOR_ID 0x2b93
+#define GN_VENDOR_ID    0x0b0e 
 
 #define UVC_INPUT_TERMINAL_ID  0x01
-#define UVC_PROCESSING_UNIT_ID 0x02
+//#define UVC_PROCESSING_UNIT_ID 0x02
+#define UVC_PROCESSING_UNIT_ID 0x03
 
 MacCameraDevice::MacCameraDevice(const std::string& deviceName) : mDeviceName(deviceName)
 {
 
 	mControlIf = NULL;
 
-	std::vector<std::string> dummy;
    // get the control interface for the device and cache it
-	if (!getAllDevices(deviceName, dummy, mControlIf)) {
-		//logger("MacCameraDevice::MacCameraDevice: getAllDevices failed\n"); // FIXME
+	if (!getControlInterfaceForDevice(deviceName, mControlIf)) {
+		printf("MacCameraDevice::MacCameraDevice: getControlInterfaceForDevice failed\n"); // FIXME
 		throw std::runtime_error("Unable to get Jabra devices");
 	} 
 	if (mControlIf == NULL) {
@@ -36,10 +37,9 @@ MacCameraDevice::~MacCameraDevice()
 
 bool MacCameraDevice::getJabraDevices(std::vector<std::string>& devPaths)
 {
-    IOUSBInterfaceInterface190 * * tmp = NULL;
 
-	if (!getAllDevices("", devPaths, tmp)) {
-		//logger("MacCameraDevice::MacCameraDevice: getAllDevices failed\n"); // FIXME
+	if (!getAllDevices(devPaths)) {
+		printf("MacCameraDevice::MacCameraDevice: getAllDevices failed\n"); // FIXME
 		return false;
 	} 
 
@@ -100,7 +100,7 @@ static bool getData(IOUSBInterfaceInterface190 * * mControlIf,
     err = (*mControlIf)->ControlRequest( mControlIf, 0, &request );
     if ( err != kIOReturnSuccess )
     {
-        //printf("getData: Control request failed\n");
+        printf("getData: Control request failed %d \n", err );
         return false;
     }
 
@@ -114,9 +114,9 @@ bool MacCameraDevice::getProperty(PropertyType t, Property& prop)
     int propertyId = convertPropertyTypeToPropertyId(t);
     int unitId = convertPropertyTypeToUnitId(t);
     int length = getSizeFromPropertyType(t); 
-    //printf("propertyId: %d\n", propertyId);
-    //printf("unitId: %d\n", unitId);
-    //printf("length: %d\n", length);
+    printf("propertyId: %d\n", propertyId);
+    printf("unitId: %d\n", unitId);
+    printf("length: %d\n", length);
 
     long value;
     
@@ -269,22 +269,31 @@ static IOUSBInterfaceInterface190** getControlInterface(IOUSBDeviceInterface182 
 }
 
 
-bool MacCameraDevice::getAllDevices(std::string devSn, 
-    std::vector<std::string> &allDevs, 
+bool MacCameraDevice::getAllDevices(std::vector<std::string> &allDevs)
+{
+   allDevs.clear();
+
+   bool a = getAllDevicesForVendorID(allDevs, ALTIA_VENDOR_ID);
+   bool b = getAllDevicesForVendorID(allDevs, GN_VENDOR_ID);
+   printf("getAllDevices: found %d devices\n", allDevs.size());
+
+   return a || b;
+
+      
+}
+
+bool MacCameraDevice::getControlInterfaceForDevice(std::string devSn, 
     IOUSBInterfaceInterface190 ** &cIf)
 {
-    allDevs.clear();
+   if (devSn == "") return false;
     cIf = NULL;
 
     io_iterator_t serviceIterator;
     io_service_t usbDevice ;       
     CFMutableDictionaryRef matchingDict = IOServiceMatching(kIOUSBDeviceClassName);
 
-    //set our vendor ID
-    long usbVendor = PANACAST_VENDOR_ID;
-    CFNumberRef numberRef = CFNumberCreate(kCFAllocatorDefault, kCFNumberSInt32Type, &usbVendor);
-    CFDictionarySetValue(matchingDict, CFSTR(kUSBVendorID), numberRef);
-    CFRelease(numberRef);
+    //get all vendor IDs
+    CFDictionarySetValue(matchingDict, CFSTR(kUSBVendorID), CFSTR("*"));
 
     //any PIDs
     CFDictionarySetValue(matchingDict, CFSTR(kUSBProductID), CFSTR("*"));
@@ -292,7 +301,7 @@ bool MacCameraDevice::getAllDevices(std::string devSn,
     //get the service iter
     kern_return_t rt =  IOServiceGetMatchingServices( kIOMasterPortDefault, matchingDict, &serviceIterator );
     if (rt != kIOReturnSuccess) {
-        printf("getAllDevices error: no device found\n");
+        printf("getControlInterfaceFrDevice error: no device found\n");
         return false;
     }
 
@@ -324,7 +333,7 @@ bool MacCameraDevice::getAllDevices(std::string devSn,
 
         UInt16 vid;
         IOReturn ret = (*deviceInterface)->GetDeviceVendor(deviceInterface, &vid);
-        if( ret != kIOReturnSuccess || vid != PANACAST_VENDOR_ID) {
+        if( ret != kIOReturnSuccess || (vid != ALTIA_VENDOR_ID && vid != GN_VENDOR_ID)) {
             IODestroyPlugInInterface(plugin);
             continue;
         }
@@ -333,7 +342,7 @@ bool MacCameraDevice::getAllDevices(std::string devSn,
         UInt8 snIdx;
         ret = (*deviceInterface)->USBGetSerialNumberStringIndex( deviceInterface, &snIdx);
         if (ret != kIOReturnSuccess) {
-            printf("getAllDevices error: failed to get serial number idx\n");
+            printf("getControlInterfaceForDevice error: failed to get serial number idx\n");
             IODestroyPlugInInterface(plugin);
             continue;
         }
@@ -341,22 +350,97 @@ bool MacCameraDevice::getAllDevices(std::string devSn,
         std::string sn = getUSBStringDescriptor(deviceInterface, snIdx);
 
 
-        if (devSn != "" && devSn == sn) { //user wants to return the control interface for particular serial number
+        if (devSn == sn) { //user wants to return the control interface for particular serial number
             cIf = getControlInterface(deviceInterface);		
             IODestroyPlugInInterface(plugin);
             return true;
         }
 
-        if (devSn == "") { //user wants to return all PanaCast's serial number
-            allDevs.push_back(sn);
-        }
         IODestroyPlugInInterface(plugin);
     } 
 
-    if (devSn == "" && allDevs.size() == 0) {
+    if (cIf == NULL) {
         return false;
     }
-    if (devSn != "" && cIf == NULL) {
+    return true;
+}
+
+
+bool MacCameraDevice::getAllDevicesForVendorID( 
+    std::vector<std::string> &allDevs, 
+    long usbVendor)
+{
+
+    io_iterator_t serviceIterator;
+    io_service_t usbDevice ;       
+    CFMutableDictionaryRef matchingDict = IOServiceMatching(kIOUSBDeviceClassName);
+
+    //set our vendor ID
+    CFNumberRef numberRef = CFNumberCreate(kCFAllocatorDefault, kCFNumberSInt32Type, &usbVendor);
+    CFDictionarySetValue(matchingDict, CFSTR(kUSBVendorID), numberRef);
+    CFRelease(numberRef);
+
+    //any PIDs
+    CFDictionarySetValue(matchingDict, CFSTR(kUSBProductID), CFSTR("*"));
+
+    //get the service iter
+    kern_return_t rt =  IOServiceGetMatchingServices( kIOMasterPortDefault, matchingDict, &serviceIterator );
+    if (rt != kIOReturnSuccess) {
+        printf("getAllDevicesForVendorID 0x%x error: no device found\n", usbVendor);
+        return false;
+    }
+
+    while ( (usbDevice = IOIteratorNext(serviceIterator)) ){
+        //Get Device interface
+        SInt32                        score;
+        IOCFPlugInInterface**         plugin = NULL; 
+        IOUSBDeviceInterface182**     deviceInterface = NULL;
+        kern_return_t                 err;
+
+        err = IOCreatePlugInInterfaceForService( usbDevice, 
+                kIOUSBDeviceUserClientTypeID, 
+                kIOCFPlugInInterfaceID, 
+                &plugin, 
+                &score ); 
+        if( (kIOReturnSuccess != err) || !plugin ) {
+            //printf("getAllDevices Error: IOCreatePlugInInterfaceForService returned 0x%08x.\n", err );
+            if (plugin!=NULL) IODestroyPlugInInterface(plugin);
+            continue; //skip and check next device
+        }
+
+        HRESULT	res = (*plugin)->QueryInterface(plugin, CFUUIDGetUUIDBytes(kIOUSBDeviceInterfaceID), (LPVOID*) &deviceInterface );
+        (*plugin)->Release(plugin);
+        if( res || deviceInterface == NULL ) {
+            //printf( "getAllDevices Error: QueryInterface returned %d.\n", (int)res );
+            if (plugin!=NULL) IODestroyPlugInInterface(plugin);
+            continue; //skip and check next device
+        }
+
+        UInt16 vid;
+        IOReturn ret = (*deviceInterface)->GetDeviceVendor(deviceInterface, &vid);
+        if( ret != kIOReturnSuccess || vid != usbVendor) {
+            IODestroyPlugInInterface(plugin);
+            continue;
+        }
+
+        //this is a PanaCast device, get its serial number:
+        UInt8 snIdx;
+        ret = (*deviceInterface)->USBGetSerialNumberStringIndex( deviceInterface, &snIdx);
+        if (ret != kIOReturnSuccess) {
+            printf("getAllDevicesForVendorID 0x%x error: failed to get serial number idx\n", usbVendor);
+            IODestroyPlugInInterface(plugin);
+            continue;
+        }
+
+        std::string sn = getUSBStringDescriptor(deviceInterface, snIdx);
+
+
+        allDevs.push_back(sn);
+        IODestroyPlugInInterface(plugin);
+    } 
+
+    if (allDevs.size() == 0) {
+       printf("getAllDevicesForVendorID 0x%x: no devices\n", usbVendor);
         return false;
     }
     return true;

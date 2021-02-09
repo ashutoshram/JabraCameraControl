@@ -108,8 +108,9 @@ class MacCameraDevice : public CameraDeviceInterface {
         std::string mDeviceName;
         // return a vector of all jabra devices in allDevs
         // if devSn is "", then return all, else return the specific requested devSn
-        static bool getAllDevices(std::string devSn, 
-            std::vector<std::string> &allDevs, IOUSBInterfaceInterface190 ** &cIf);
+        static bool getAllDevices(std::vector<std::string> &allDevs);
+        bool getControlInterfaceForDevice(std::string devSn, IOUSBInterfaceInterface190 ** &cIf);
+        static bool getAllDevicesForVendorID(std::vector<std::string> &allDevs, long usbVendor);
 };
   
 #endif
@@ -126,6 +127,7 @@ class CameraQueryInterface {
 #elif __linux__
             return LinuxCameraDevice::getJabraDevices(devPaths);
 #elif __APPLE__
+            printf("calling MacCameraDevice::getJabraDevices\n");
             return MacCameraDevice::getJabraDevices(devPaths);
 #endif
         }

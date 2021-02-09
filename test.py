@@ -15,9 +15,11 @@ print('Cameras found: ', dn)
 def convertYUYV2BGR(yuyv):
     return cv2.cvtColor(yuyv, cv2.COLOR_YUV2BGR_YUYV)
 
-width = 1280
-height = 720
-format_ = 'mjpg'
+width = 1920    
+height = 1080
+#format_ = 'mjpg'
+format_ = 'nv12'
+#format_ = 'yuyv'
 if not r.setStreamParams(deviceName=dn[0], width=width, height=height, format=format_, fps=30):
     print('Unable to set stream params')
     sys.exit(1)
