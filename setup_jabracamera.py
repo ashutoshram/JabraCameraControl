@@ -2,6 +2,8 @@
 import platform
 
 from distutils.core import Extension, setup
+from distutils import unixccompiler
+
 import numpy as np
 
 import os
@@ -12,6 +14,9 @@ link_extra_args = []
 if platform.system() == "Windows":
     compile_extra_args = ["/std:c++latest", "/EHsc"]
 elif platform.system() == "Darwin":
+    if not '.mm' in unixccompiler.UnixCCompiler.src_extensions:
+        print('appending .mm to src_extensions')
+        unixccompiler.UnixCCompiler.src_extensions.append('.mm')
     compile_extra_args = ["-O3", "-mmacosx-version-min=10.9", "-std=c++11", "-stdlib=libc++", "-Wno-c++11-compat-deprecated-writable-strings", "-I%s" % os.getcwd(), "-I%s/Mac" % os.getcwd()]
     #link_extra_args = ["-stdlib=libc++", "-mmacosx-version-min=10.9",  "-lpthread",  "-framework CoreFoundation",  "-framework IOKit"]
     link_extra_args = ["-stdlib=libc++", "-mmacosx-version-min=10.9",  "-lpthread" ]
