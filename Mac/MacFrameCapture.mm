@@ -1,10 +1,6 @@
 //
 //  MacCameraCapture.cpp
-//  OpenCLYUY2
-//
-//  Created by Ram Natarajan on 8/18/16.
-//  Copyright (c) 2016 Ram Natarajan. All rights reserved.
-//
+
 
 #include "MacFrameCapture.h"
 #include "AVFoundationCapture.h"
