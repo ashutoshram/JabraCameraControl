@@ -2,8 +2,8 @@
 //  AVFoundationCapture.m
 //  cam
 //
-//  Created by John Zhang on 8/28/15.
-//  Copyright (c) 2015 John Zhang. All rights reserved.
+//  Created by Ashutosh Ram on 1/1/21.
+//  Copyright (c) 2021 Ashutosh Ram. All rights reserved.
 //
 
 #import "AVFoundationCapture.h"
